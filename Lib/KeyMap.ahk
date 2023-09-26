@@ -26,7 +26,6 @@ class KeyMap{
 		}
 		ini:= new InIReader(filePath)
 		if((this.Name:=name)){
-			
 			if(!KeyMap.Modifier.HasKey(dir)){
 				_director:= new HotkeyDirector(this.active)
 				_director.On(1)
@@ -75,8 +74,10 @@ class KeyMap{
 		;修饰键抬起时 遍历检测持续映射相关按键是否被按下
 		for k,v in this._keyStates {
 		; 如果存在持续映射态, 设置持续映射
-			if(v.Call())
+			;@LOG("[" this.filePath "]" k ":" v._e "==" v.Call() "`n")
+			if(v.Call()){
 				return !this.Control(k)
+			}
 		}
 		; 否则重置持续映射
 		this["@"]:=KeyMap.action[this.Name]:=0
@@ -98,13 +99,14 @@ class KeyMap{
 		KeyMap.press[this.Name]:=state
 	}
 	Control(section){
+		result:= 0
 		;设置文件内的持续映射
 		if(InStr(section,"@"))
-			return this["@"]:=1
+			result:= this["@"]:=1
 		;设置全局同名文件的持续映射
 		if(InStr(section,"&"))
-			return KeyMap.action[this.Name]:=1
-		return 1
+			result:= KeyMap.action[this.Name]:=1
+		return result
 	}
 	GetKeyState(o){
 		temp:="_"
@@ -188,6 +190,7 @@ class KeyMap{
 						Hotkey(this.prev . k,this.Call.Bind(this,k,this.mode . v),"I" linput)
 					}
 				}
+				;@LOG("$Register(" k "=" v "`t`t of: <" this.parent.filepath  ">--[" this.sectionname "]`n")
 			}
 			HotkeyIf()
 			;@LOG("#InputLevel=" linput "`t`t of: <" this.parent.filepath  ">--[" this.sectionname "]`n")
@@ -236,7 +239,7 @@ class KeyMap{
 					@LOG("@TOGGLE[" k "]=" KeyState.toggle[k] "`t`t `n")
 			}
 			if(KeyState.toggle["log"])
-				@LOG(key "`t=`t" value "`n`t`t`t <" this.parent.filepath  "`t`t[" this.sectionname "]`n")
+				@LOG(key "`t=`t" value "`n`t`t`t <" this.parent.filepath ">`t`t[" this.sectionname "]`n")
 		}
 		Send(value){
 			this.parent.Sending()

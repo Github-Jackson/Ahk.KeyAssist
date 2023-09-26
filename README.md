@@ -1,7 +1,5 @@
 # KeyAssist 映射属于自己的快捷键方案
 
-
-
 ## 1. 开始使用
 
 ### 1.1 启动 KeyAssist.exe
@@ -16,7 +14,7 @@
 
 #### 1.2.2 [Modifier] 应用程序中独立的修饰键单独按下时的映射
 
-* Capslock = {Esc} : 配置了Capslock组合映射时, 若按下Capslock到松开期间没有按下配置的其他按键, 将发送<kbd>Esc<kbd>
+* Capslock = {Esc} : 配置了Capslock组合映射时, 若按下Capslock到松开期间没有按下配置的其他按键, 将发送`<kbd>`Esc`<kbd>`
 
 #### 1.2.3 [Control] 配置快捷键对应用程序进行相应的控制
 
@@ -46,22 +44,20 @@
   * Delay : 延时毫秒, -1标识无延时, 0表示最小延时
 * StoreCapsLockMode = On/Off : 设置每次发送键击后是否回复CapsLock的状态
 * DefaultMouseSpeed = Speed : 设置移动鼠标时的默认速度
-  * Speed : 0(最快) - 100(最慢)	
+  * Speed : 0(最快) - 100(最慢)
 * SendMode = Mode : 设置发送模拟键击时使用的方法
-  * Mode : 
+  * Mode :
     * Event : 默认使用的模式, 支持按键延迟
     * Input : 不支持按键延迟, 模拟键击期间会缓存用户的输入滞后到模拟完成. 该模式可能会让某些程序忽略快捷键
     * Play: 在启用UAC的系统中无法使用, 支持大部分游戏
 * SendLevel = Level :
 * InputLevel = Level :
 * CapsLockState|NumLockState|ScrollLockState = State : 设置CapsLock/NumLock/ScrollLock键的状态
-  * State = 
+  * State =
     * On/1 : 按键打开状态
     * Off/0 : 按键关闭状态
     * AlwaysOn : 强制按键保持打开状态
     * AlwaysOff : 强制按键保持关闭状态
-
-
 
 ### 1.3 快捷键映射配置文件 [Filename].ini
 
@@ -95,11 +91,11 @@
 
 > ini配置文件中通过[Section]组织配置文件, 现有的实现不允许同一个ini文件中的Section同名
 
-##### 1.3.2.1 修饰符 
+##### 1.3.2.1 修饰符
 
 > ~~目前Section无明显字面意义, 通过携带修饰符附加功能~~
 >
-> Section Name以`:`分割为两部分, 前者如下描述该域的行为。
+> Section Name以 `:`分割为两部分, 前者如下描述该域的行为。
 >
 > 后者如Filename逻辑表达式，用于限定该域中的快捷键生效条件
 
@@ -123,7 +119,7 @@
 >
 > #: 文本模式 指输出的内容不会被转义, 同上, 不同之处在于不会尝试将字符(`r,`n, ``t` 和 ``b` 除外) 转换为键码
 
-> ~~23.8.20: 支持通过 括号`(level)` 设置热键的输入输出级别 (InputLevel、SendLevel)~~
+> ~~23.8.20: 支持通过 括号 `(level)` 设置热键的输入输出级别 (InputLevel、SendLevel)~~
 >
 > 23.8.22:
 >
@@ -141,17 +137,14 @@
 
 > 23.8.21: 热字串支持^section 从而使用SendInput模式发送。不支持KeyDelay
 
-> 23.8.21: 
+> 23.8.21:
 >
-> ?: 执行模式, 解析右侧表达式并动态调用, 使用`.`进行链式解构, 使用`,`分割参数
+> ?: 执行模式, 解析右侧表达式并动态调用, 使用 `.`进行链式解构, 使用 `,`分割参数
 >
 > ```ahk
 > Run,notepad.exe  ==> Run("notepad.exe")
 > KeyState.GetStatus,this,Capslock ==> KeyState.GetStatus("this","Capslock")
 > ```
->
-
-
 
 ##### 1.3.2.2 持续映射模式
 
@@ -159,14 +152,14 @@
 >
 > 例如:
 
-``` ini
+```ini
 ;Capslock.ini
 [@&Section]
 I={Up}
 T=Test
 ```
 
->  Capslock.ini 文件中, 映射了Capslock+I = {Up} , 按下Capslock+I 将模拟↑键, 若按住I的情况下松开Capslock键, 将激活持续映射模式, 持续映射模式下 按下I 就会模拟发送↑键
+> Capslock.ini 文件中, 映射了Capslock+I = {Up} , 按下Capslock+I 将模拟↑键, 若按住I的情况下松开Capslock键, 将激活持续映射模式, 持续映射模式下 按下I 就会模拟发送↑键
 >
 > Capslock.ini文件中, 映射 T=Test, 按下Capslock+T, 保持T按下状态然后松开Capslock, 将激活持续映射模式
 > 原需要Capslock+T才可输出Test, 在持续映射模式激活的情况下,直接按T即可输出Test
@@ -175,7 +168,7 @@ T=Test
 
 ##### 1.3.2.3 按键映射
 
-``` ini
+```ini
 ;Capslock.ini
 [Control]
 *I={Blind}{Up}
@@ -210,25 +203,19 @@ $U=u
 >
 > :: => 热字串模式, 默认情况实现为自动替换字符串 即输入hlw将被替换为hello world
 >
-> 若Section中包含`!`修饰, 则使用SendPlay模式实现热字串
+> 若Section中包含 `!`修饰, 则使用SendPlay模式实现热字串
 >
-> 若Section中包含`^`修饰, 则使用SendInput模式实现热字串
+> 若Section中包含 `^`修饰, 则使用SendInput模式实现热字串
 >
 > 若Section中包含$修饰, 则使用SendEvent模式实现热字串
->
-> 
 
 ### 1.4 根据文件夹限定快捷键生效的窗体
 
-> 可能的使用场景: 
+> 可能的使用场景:
 >
 > 1. 限定配置文件只在target.exe中生效
->
 > 2. 限定只在path/*.exe中生效
->
 > 3. 限定只在target.exe的某些title中生效
->
->    
 
 > $=ahk_class
 >
@@ -236,11 +223,7 @@ $U=u
 >
 > @=ahk_exe
 
-
-
 完成了Hotstring的适配, 需要求ini配置行以:开始
-
-
 
 对ini配置文件中的key做 \t\n到制表符,换行符的适配以适应Hotstring
 
@@ -256,7 +239,9 @@ ini配置文件中key和value最外层的成对单双引号[",']会被忽略, �
 
 在按键映射中通过{@name state} 设置name对应的toggle态, 若省略state则将toggle态取反, 同切换
 
->待实现:
+## #. 待实现
+
+> 待实现:
 
 > 系统中存在{Sleep}键, 故重写{@Sleep milliscond} 用于在输入中休眠milliscond(毫秒)
 
@@ -265,3 +250,9 @@ ini配置文件中key和value最外层的成对单双引号[",']会被忽略, �
 > {:name}读取变量
 >
 > {:name string}设置变量的值为string
+
+BUG: 修饰键如 `Capslock`的 `Capslock Up`事件只会被执行一个变体
+
+满足最前面的条件后, 后面的Capslock Up便无法触发
+
+无法触发其他变体的持续映射模式

@@ -26,13 +26,14 @@ class KeyMap{
 		}
 		ini:= new InIReader(filePath)
 		if((this.Name:=name)){
-			
 			if(!KeyMap.Modifier.HasKey(dir)){
-				KeyMap.Modifier.Put(dir,new HotkeyDirector(this.active))
+				_director:= new HotkeyDirector(this.active)
+				_director.On(1)
+				KeyMap.Modifier.Put(dir,_director)
 			}
 			
 			try {
-				h:=KeyMap.Modifier[dir].Put("*" name " Up",this).list.Call:=this.CallAll
+				h:=KeyMap.Modifier[dir].Put("*" name " Up",this).list.On(1)
 			}
 			return this.Register(ini)
 		}
@@ -40,12 +41,6 @@ class KeyMap{
 		for k,v in ini {
 			new this.KeySection(k,v,this)
 		}
-	}
-	CallAll(){
-		result:=1
-		for k,v in this.list
-			result&=v.Call()
-		return result
 	}
 	_Replace(e,replaceMap){
 		for k,v in replaceMap{
@@ -57,6 +52,7 @@ class KeyMap{
 		this._keyStates:={"":new KeyState(this.name)}
 
 		for k,v in ini {
+			; 如果section name 存在@|& 收集域中的所有热键
 			if(InStr(k,"@")||InStr(k,"&"))
 				this._keyStates[k]:=this.GetKeyState(v)
 			this.decor:=new HotkeyDecorator(this.GetAction.Bind(this,k),this.active).On(1)
@@ -71,17 +67,28 @@ class KeyMap{
 			result:=result||this["@"]
 		return result||this._keyStates[""].Call()
 	}
-	
+	; 以文件名注册热键成功后的按键抬起事件的处理函数
+	; 如Capslock.ini => Hotkey("*Capslock Up")
 	Call(){
 		Sleep % this.LongMappingDetectionDelay
-		for k,v in this._keyStates
-			if(v.Call())
+		;修饰键抬起时 遍历检测持续映射相关按键是否被按下
+		for k,v in this._keyStates {
+		; 如果存在持续映射态, 设置持续映射
+			;@LOG("[" this.filePath "]" k ":" v._e "==" v.Call() "`n")
+			if(v.Call()){
 				return !this.Control(k)
-		if(KeyMap.press[this.Name]){
-			this.SetPress(0)
-			this["@"]:=KeyMap.action[this.Name]:=0
+			}
 		}
-		else {
+		; 否则重置持续映射
+		this["@"]:=KeyMap.action[this.Name]:=0
+		;检测全局同名(同一个按键)修饰键下是否触发过按键映射(热键)
+		;若触发过,press为1, 则屏蔽修饰键
+		;若press为0 则发送Application.Config [Modifier]中修饰键对应的映射键
+		if(KeyMap.press[this.Name]){
+			;重置press
+			this.SetPress(0)
+			return 0
+		}else {
 			return true
 		}
 	}
@@ -92,11 +99,14 @@ class KeyMap{
 		KeyMap.press[this.Name]:=state
 	}
 	Control(section){
+		result:= 0
+		;设置文件内的持续映射
 		if(InStr(section,"@"))
-			return this["@"]:=1
+			result:= this["@"]:=1
+		;设置全局同名文件的持续映射
 		if(InStr(section,"&"))
-			return KeyMap.action[this.Name]:=1
-		return 1
+			result:= KeyMap.action[this.Name]:=1
+		return result
 	}
 	GetKeyState(o){
 		temp:="_"
@@ -107,7 +117,9 @@ class KeyMap{
 	Class KeySection{
 		static SendAss:={modify:{"~":"~","*":"*"},mode:{"%":"{Raw}","#":"{Text}","*":"{Blind}"}}
 		static toggle_regex:="OS){@(.+?)( [+-]?\d+)?}" ;用于匹配Send 中的{@name}
-		static send_level_regex:="OS)\((\d+)\)"
+		static send_level_regex:="OS)\+(\d+)" ;用于匹配Section 中的SendLevel
+		static input_level_regex:="OS)-(\d+)" ;用于匹配Section 中的InputLevel
+		static key_delay_regex:="iOS)\(([\d,play]+)\)" ;用于匹配Section 中的(delay,duration,'Play')
 		__New(name,section,parent){
 			this.parent:=parent
 			this.sectionname:=name
@@ -118,17 +130,29 @@ class KeyMap{
 				condition:= StrSplit(name,":")
 				name:=condition[1]
 				decor:=parent.decor.Clone()
-				decor.Push(condition[2])
+				decor.InsertAt(1,new KeyState(condition[2]))
 			}
 
 			this._Initial(name)
 			;SendLevel
-			level:=0
+			this.send_level:=0
 			if(RegExMatch(name,this.send_level_regex,match)){
-				level:=match[1]
+				this.send_level:=match[1]
 			}else if(Application.Config.Setting.SendLevel){
-				level:=Application.Config.Setting.SendLevel
+				this.send_level:=Application.Config.Setting.SendLevel
 			}
+
+			;Hotkey - InputLevel
+			linput:=""
+			if(RegExMatch(name, this.input_level_regex,match)){
+				linput:=match[1]
+			}
+			;KeyDelay
+			if(RegExMatch(name, this.key_delay_regex, match)){
+				this.key_delay:=StrSplit(match[1],",")
+			}
+
+			; 收集toggle 键值对
 			this.toggle:={}
 
 			HotkeyIf(decor)
@@ -152,18 +176,24 @@ class KeyMap{
 				if(InStr(k,":")==1){
 					handle:=v
 					if(InStr(name,"$") or InStr(name,"^") or InStr(name,"!")){
-						handle:=this.Hotstring.Bind(this,k,this.mode . v,level)
+						handle:=this.Call.Bind(this,k,this.mode . v)
 					}else if(InStr(name,"?")){
-						handle:=this.Hotstring.Bind(this,k,this.mode . v,level)
+						handle:=this.Call.Bind(this,k,this.mode . v)
 					}else{
 						handle:=v
 					}
 					Hotstring(k,handle)
 				}else{
-					Hotkey(this.prev . k,this.Call.Bind(this,k,this.mode . v),"I" level)
+					if(linput==""){
+						Hotkey(this.prev . k,this.Call.Bind(this,k,this.mode . v))
+					}else{
+						Hotkey(this.prev . k,this.Call.Bind(this,k,this.mode . v),"I" linput)
+					}
 				}
+				;@LOG("$Register(" k "=" v "`t`t of: <" this.parent.filepath  ">--[" this.sectionname "]`n")
 			}
 			HotkeyIf()
+			;@LOG("#InputLevel=" linput "`t`t of: <" this.parent.filepath  ">--[" this.sectionname "]`n")
 		}
 		_Initial(name){
 			for k,v in this.SendAss.modify {
@@ -204,18 +234,20 @@ class KeyMap{
 					if(KeyState.toggle[k]<=0){
 						KeyState.toggle[k]:=0
 					}
-					@LOG("@[" this.sectionname "]`t`t`t @TOGGLE[" k "]=" KeyState.toggle[k] "`n")
 				}
+				if(KeyState.toggle["log"])
+					@LOG("@TOGGLE[" k "]=" KeyState.toggle[k] "`t`t `n")
 			}
-			@LOG("[" this.sectionname "]`t`t" key "=" value "`t of:`t[" this.parent.filepath  "]`n")
+			if(KeyState.toggle["log"])
+				@LOG(key "`t=`t" value "`n`t`t`t <" this.parent.filepath ">`t`t[" this.sectionname "]`n")
 		}
 		Send(value){
 			this.parent.Sending()
+			if(this.key_delay){
+				SetKeyDelay(this.key_delay*)
+			}
+			SendLevel % this.send_level
 			this._Send(value)
-		}
-		Hotstring(key,value,level:=0){
-			SendLevel, %level%
-			this.Call(key,value)
 		}
 		DynamicCall(expression){
 			DynamicCall(expression)

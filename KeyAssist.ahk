@@ -15,7 +15,7 @@ SetTitleMatchMode,RegEx
 Process, Priority,, High
 
 new @LOG(A_WorkingDir "\log.txt")
-
+;KeyState.toggle["Log"]:=1
 $main(){
 	if(Application.Config.Config.LongMappingDetectionDelay){
 		KeyMap.LongMappingDetectionDelay := Application.Config.Config.LongMappingDetectionDelay
